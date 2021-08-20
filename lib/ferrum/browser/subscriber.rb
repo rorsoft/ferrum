@@ -16,8 +16,8 @@ module Ferrum
         @on = Concurrent::Hash.new { |h, k| h[k] = Concurrent::Array.new }
       end
 
-      def on(event, &block)
-        @on[event] << block
+      def on(event, handler_type: :any_times, &block)
+        send("handle_#{handler_type}", event, &block)
         true
       end
 
@@ -32,6 +32,24 @@ module Ferrum
           # If there are a few callback we provide current index and total
           block.call(params, index, total)
         end
+      end
+
+      private
+
+      def handle_any_times(event, &block)
+        @on[event] << block
+      end
+
+      def handle_once(event, &block)
+        @once ||= Concurrent::Hash.new { |h, k| h[k] = Concurrent::Array.new }
+        handler = Proc.new do |args|
+          _block = @on[event].find { |_block| @once[event].find { |_handler| _handler.object_id == _block.object_id } }
+          @once[event] = @once[event].reject { |_block| _block.object_id == _block.object_id }
+          @on[event] = @on[event].reject { |_block| _block.object_id == _block.object_id }
+          block.call(args)
+        end
+        @once[event] << handler
+        @on[event] << handler
       end
     end
   end
