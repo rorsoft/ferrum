@@ -734,5 +734,20 @@ module Ferrum
         end
       end
     end
+
+    context "tracing" do
+      let(:file_path) { "#{PROJECT_ROOT}/spec/tmp/trace.json.gz" }
+
+      after do
+        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json.gz")
+      end
+
+      it "redefines existed handler" do
+        browser.tracing.start(path: file_path, screenshots: true)
+        browser.go_to("https://www.google.com")
+        browser.tracing.stop
+        expect(File.exist?(file_path)).to be(true)
+      end
+    end
   end
 end

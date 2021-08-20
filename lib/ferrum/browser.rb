@@ -7,6 +7,7 @@ require "ferrum/contexts"
 require "ferrum/browser/xvfb"
 require "ferrum/browser/process"
 require "ferrum/browser/client"
+require "ferrum/browser/tracing"
 
 module Ferrum
   class Browser
@@ -31,7 +32,7 @@ module Ferrum
     delegate %i[default_user_agent] => :process
 
     attr_reader :client, :process, :contexts, :logger, :js_errors, :pending_connection_errors,
-                :slowmo, :base_url, :options, :window_size, :ws_max_receive_size
+                :slowmo, :base_url, :options, :window_size, :ws_max_receive_size, :tracing
     attr_writer :timeout
 
     def initialize(options = nil)
@@ -116,6 +117,10 @@ module Ferrum
 
     def crash
       command("Browser.crash")
+    end
+
+    def tracing
+      @tracing ||= Tracing.new(client: @client)
     end
 
     private
