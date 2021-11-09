@@ -26,9 +26,9 @@ module Ferrum
 
       sleep 0.2 # Wait for node to disappear
 
-      expect {
+      expect do
         browser.at_xpath("//a[text()='JS redirect']").click
-      }.to raise_error(
+      end.to raise_error(
         Ferrum::CoordinatesNotFoundError,
         "Could not compute content quads"
       )
@@ -83,21 +83,108 @@ module Ferrum
       expect(links.first.text).to eq("Open for match")
     end
 
+    describe "#selected" do
+      before do
+        browser.goto("/ferrum/form")
+      end
+
+      it "returns texts of selected options" do
+        expect(browser.at_xpath("//*[@id='form_region']").selected).to eq(["Norway"])
+      end
+
+      context "when options exists but no selected option" do
+        it "returns first option text as default value" do
+          expect(browser.at_xpath("//*[@id='form_title']").selected).to eq(["Mrs"])
+        end
+      end
+
+      context "when no selected options" do
+        it "returns empty array" do
+          expect(browser.at_xpath("//*[@id='form_tendency']").selected).to eq([])
+        end
+      end
+
+      context "when selector is not <select>" do
+        it "raises JavaScriptError with proper message" do
+          expect { browser.at_xpath("//*[@id='customer_name']").selected }
+            .to raise_exception(Ferrum::JavaScriptError, /Element is not a <select> element/)
+        end
+      end
+    end
+
+    describe "#select" do
+      before do
+        browser.goto("/ferrum/form")
+      end
+
+      it "picks option in select by match string argument" do
+        expect(browser.at_xpath("//*[@id='form_title']").select("Miss").selected).to eq(["Miss"])
+      end
+
+      shared_examples "clears selected options with no exception" do |options|
+        it "clears selected options with no exception" do
+          expect(browser.at_xpath("//*[@id='form_title']").selected).to eq(["Mrs"])
+          expect(browser.at_xpath("//*[@id='form_title']").select(options).selected).to eq([])
+        end
+      end
+
+      context "when option with provided text does not exist" do
+        include_examples "clears selected options with no exception", "Gotcha"
+      end
+
+      context "when provided empty array" do
+        include_examples "clears selected options with no exception", []
+      end
+
+      context "when provided empty string" do
+        include_examples "clears selected options with no exception", ""
+      end
+
+      context "when one of option with provided texts does not exist" do
+        it "picks only existed options with no exception" do
+          expect(browser.at_xpath("//*[@id='form_title']").selected).to eq(["Mrs"])
+          expect(browser.at_xpath("//*[@id='form_title']").select(%w[Mrs SQL]).selected).to eq(["Mrs"])
+        end
+      end
+
+      context "when select has multiple property" do
+        it "picks options in select by match arguments as array" do
+          expect(browser.at_xpath("//*[@id='form_languages']").select(%w[SQL Ruby]).selected).to eq(%w[Ruby SQL])
+        end
+
+        it "picks options in select by match arguments as string" do
+          expect(browser.at_xpath("//*[@id='form_languages']").select("SQL, Ruby").selected).to eq(%w[Ruby SQL])
+        end
+      end
+
+      context "when selector is not <select>" do
+        it "raises JavaScriptError with proper message" do
+          expect { browser.at_xpath("//*[@id='customer_name']").select(anything) }
+            .to raise_exception(Ferrum::JavaScriptError, /Element is not a <select> element/)
+        end
+      end
+
+      context "when provided texts of disabled option" do
+        it "picks disabled option with no exception" do
+          expect(browser.at_xpath("//*[@id='form_title']").select(["Other"]).selected).to eq(["Other"])
+        end
+      end
+    end
+
     context "when the element is not in the viewport" do
       before do
         browser.go_to("/ferrum/with_js")
       end
 
-      # FIXME:
-      it "raises a MouseEventFailed error", skip: true do
-        expect {
+      it "raises a MouseEventFailed error", skip: "needs fix" do
+        expect do
           browser.at_xpath("//a[text() = 'O hai']").click
-        }.to raise_error(Ferrum::MouseEventFailed)
+        end.to raise_error(Ferrum::MouseEventFailed)
       end
 
       context "and is then brought in" do
         before do
-          browser.execute %Q($("#off-the-left").animate({left: "10"});)
+          browser.execute %($("#off-the-left").animate({left: "10"});)
         end
 
         it "clicks properly" do
@@ -111,8 +198,7 @@ module Ferrum
         browser.go_to("/ferrum/scroll")
       end
 
-      it "scrolls into view" do
-        # FIXME:
+      it "scrolls into view", skip: "needs fix" do
         browser.at_xpath("//a[text() = 'Link outside viewport']").click
         expect(browser.current_url).to eq("/")
       end

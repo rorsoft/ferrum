@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
+require "concurrent-ruby"
 require "ferrum/browser"
 require "ferrum/node"
 
 module Ferrum
   class Error               < StandardError; end
+
   class NoSuchPageError     < Error; end
+
   class NoSuchTargetError   < Error; end
+
   class NotImplementedError < Error; end
 
   class StatusError < Error
@@ -30,9 +34,9 @@ module Ferrum
   class TimeoutError < Error
     def message
       "Timed out waiting for response. It's possible that this happened " \
-      "because something took a very long time (for example a page load " \
-      "was slow). If so, setting the :timeout option to a higher value might " \
-      "help."
+        "because something took a very long time (for example a page load " \
+        "was slow). If so, setting the :timeout option to a higher value might " \
+        "help."
     end
   end
 
@@ -59,14 +63,16 @@ module Ferrum
 
   class NodeMovingError < Error
     def initialize(node, prev, current)
-      @node, @prev, @current = node, prev, current
+      @node = node
+      @prev = prev
+      @current = current
       super(message)
     end
 
     def message
       "#{@node.inspect} that you're trying to click is moving, hence " \
-      "we cannot. Previosuly it was at #{@prev.inspect} but now at " \
-      "#{@current.inspect}."
+        "we cannot. Previously it was at #{@prev.inspect} but now at " \
+        "#{@current.inspect}."
     end
   end
 
@@ -103,10 +109,11 @@ module Ferrum
   end
 
   class JavaScriptError < BrowserError
-    attr_reader :class_name, :message
+    attr_reader :class_name, :message, :stack_trace
 
-    def initialize(response)
+    def initialize(response, stack_trace = nil)
       @class_name, @message = response.values_at("className", "description")
+      @stack_trace = stack_trace
       super(response.merge("message" => @message))
     end
   end
@@ -125,11 +132,11 @@ module Ferrum
     end
 
     def started
-      @@started ||= monotonic_time
+      @started ||= monotonic_time
     end
 
     def elapsed_time(start = nil)
-      monotonic_time - (start || @@started)
+      monotonic_time - (start || @started)
     end
 
     def monotonic_time
@@ -145,6 +152,7 @@ module Ferrum
       yield
     rescue *Array(errors)
       raise if attempts >= max
+
       attempts += 1
       sleep(wait)
       retry
