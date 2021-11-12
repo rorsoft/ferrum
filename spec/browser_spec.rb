@@ -826,17 +826,16 @@ module Ferrum
     end
 
     context "tracing" do
-      let(:file_path) { "#{PROJECT_ROOT}/spec/tmp/trace.json.gz" }
+      let(:file_path) { "#{PROJECT_ROOT}/spec/tmp/trace.json" }
 
-      after do
-        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json.gz")
-      end
-
-      it "redefines existed handler" do
-        browser.tracing.start(path: file_path, screenshots: true)
+      it "outputs a trace" do
+        browser.tracing.start(path: file_path)
         browser.go_to("https://www.google.com")
         browser.tracing.stop
+        sleep 1
         expect(File.exist?(file_path)).to be(true)
+      ensure
+        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
       end
     end
   end
