@@ -832,10 +832,86 @@ module Ferrum
         browser.tracing.start(path: file_path)
         browser.go_to("https://www.google.com")
         browser.tracing.stop
-        sleep 1
+        sleep 2
         expect(File.exist?(file_path)).to be(true)
       ensure
         FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
+      end
+
+      it "runs with custom options" do
+        browser.tracing.start(path: file_path, options: {
+          traceConfig: {
+            includedCategories: ["disabled-by-default-devtools.timeline"],
+            excludedCategories: ["*"],
+          },
+        })
+        browser.go_to
+        browser.tracing.stop
+        sleep 2
+        expect(File.exist?(file_path)).to be(true)
+        content = File.read(file_path)
+        trace_config = JSON.parse(content)["metadata"]["trace-config"]
+        expect(JSON.parse(trace_config)["excluded_categories"]).to eq(["*"])
+        expect(JSON.parse(trace_config)["included_categories"]).to eq(["disabled-by-default-devtools.timeline"])
+        expect(JSON.parse(content)["traceEvents"].any? { |object| object["cat"] == "toplevel" }).to eq(false)
+      ensure
+        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
+      end
+
+      it "runs with default categories" do
+        browser.tracing.start(path: file_path)
+        browser.go_to
+        browser.tracing.stop
+        sleep 2
+        expect(File.exist?(file_path)).to be(true)
+        content = File.read(file_path)
+        trace_config = JSON.parse(content)["metadata"]["trace-config"]
+        expect(JSON.parse(trace_config)["excluded_categories"]).to eq(["*"])
+        expect(JSON.parse(trace_config)["included_categories"]).
+          to match_array(%w[
+            devtools.timeline
+            v8.execute
+            disabled-by-default-devtools.timeline
+            disabled-by-default-devtools.timeline.frame
+            toplevel
+            blink.console
+            blink.user_timing
+            latencyInfo
+            disabled-by-default-devtools.timeline.stack
+            disabled-by-default-v8.cpu_profiler
+            disabled-by-default-v8.cpu_profiler.hires
+          ])
+        expect(JSON.parse(content)["traceEvents"].any? { |object| object["cat"] == "toplevel" }).to eq(true)
+      ensure
+        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
+      end
+
+      it "runs with default categories" do
+        browser.tracing.start(path: file_path)
+        browser.go_to
+        browser.tracing.stop
+        sleep 2
+        expect(File.exist?(file_path)).to be(true)
+        content = File.read(file_path)
+        trace_config = JSON.parse(content)["metadata"]["trace-config"]
+        expect(JSON.parse(trace_config)["excluded_categories"]).to eq(["*"])
+        expect(JSON.parse(content)["traceEvents"].any? { |object| object["cat"] == "toplevel" }).to eq(true)
+      ensure
+        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
+      end
+
+      it "throws an exception if tracing on two pages" do
+        browser.tracing.start(path: file_path)
+        page = browser.create_page
+        expect { page.tracing.start(path: file_path) }.to raise_exception(Ferrum::BrowserError) do |e|
+          expect(e.message).to eq("Tracing has already been started (possibly in another tab).")
+        end
+      end
+
+      it "throws an exception if tracing on two pages" do
+        expect { browser.tracing.stop }.to raise_exception(Ferrum::BrowserError) do |e|
+          expect(e.message).to eq("Tracing is not started")
+        end
       end
     end
   end

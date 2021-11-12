@@ -8,7 +8,6 @@ require "ferrum/contexts"
 require "ferrum/browser/xvfb"
 require "ferrum/browser/process"
 require "ferrum/browser/client"
-require "ferrum/browser/tracing"
 
 module Ferrum
   class Browser
@@ -29,12 +28,12 @@ module Ferrum
                 evaluate evaluate_on evaluate_async execute evaluate_func
                 add_script_tag add_style_tag bypass_csp
                 on goto position position=
-                playback_rate playback_rate=] => :page
+                playback_rate playback_rate= tracing] => :page
     delegate %i[default_user_agent] => :process
 
     attr_reader :client, :process, :contexts, :logger, :js_errors, :pending_connection_errors,
                 :slowmo, :base_url, :options, :window_size, :ws_max_receive_size, :proxy_options,
-                :proxy_server, :tracing
+                :proxy_server
     attr_writer :timeout
 
     def initialize(options = nil)
@@ -148,10 +147,6 @@ module Ferrum
 
     def crash
       command("Browser.crash")
-    end
-
-    def tracing
-      @tracing ||= Tracing.new(client: @client)
     end
 
     private

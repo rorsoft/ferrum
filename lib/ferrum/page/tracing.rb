@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 module Ferrum
-  class Browser
-    # chrome://tracing
+  class Page
     class Tracing
-      DEFAULT_CATEGORIES = %w[
-        -*
+      INCLUDED_CATEGORIES = %w[
         devtools.timeline
         v8.execute
         disabled-by-default-devtools.timeline
@@ -18,30 +16,42 @@ module Ferrum
         disabled-by-default-v8.cpu_profiler
         disabled-by-default-v8.cpu_profiler.hires
       ]
+      EXCLUDED_CATEGORIES = %w[
+        *
+      ]
 
       def initialize(client:)
         self.client = client
       end
 
-      def start(path: '', screenshots: false, categories: DEFAULT_CATEGORIES)
-        raise "Cannot start recording trace while already recording trace." if recording
-        categories = categories.concat(["disabled-by-default-devtools.screenshot"]) if screenshots
+      def start(
+        path: '',
+        screenshots: false,
+        options: {}
+      )
+        categories = INCLUDED_CATEGORIES.concat(["disabled-by-default-devtools.screenshot"]) if screenshots
         self.path = path
-        self.recording = true
-        @client.command("Tracing.start", transferMode: "ReturnAsStream", categories: categories.join(','))
+        client.command(
+          "Tracing.start",
+          transferMode: "ReturnAsStream",
+          traceConfig: {
+            includedCategories: INCLUDED_CATEGORIES,
+            excludedCategories: EXCLUDED_CATEGORIES,
+          },
+          **options
+        )
       end
 
       def stop
-        @client.on("Tracing.tracingComplete", handler_type: :once) do |event|
+        client.on("Tracing.tracingComplete", handler_type: :once) do |event|
           stream_to_file(event.fetch("stream"), path: path)
         end
-        @client.command("Tracing.end")
-        self.recording = false
+        client.command("Tracing.end")
       end
 
       private
 
-      attr_accessor :client, :recording, :path
+      attr_accessor :client, :path
 
       # DRY lib/ferrum/page/screenshot.rb
       def stream_to_file(handle, path:)
