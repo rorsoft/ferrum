@@ -32,10 +32,10 @@ module Ferrum
         categories = INCLUDED_CATEGORIES.concat(["disabled-by-default-devtools.screenshot"]) if screenshots
         self.path = Concurrent::ThreadLocalVar.new(path)
         inner_start(options)
-        handle_tracing_event
       end
 
       def stop
+        handle_tracing_event
         client.command("Tracing.end")
       end
 
@@ -56,7 +56,7 @@ module Ferrum
       end
 
       def handle_tracing_event
-        client.on("Tracing.tracingComplete") do |event, index, total|
+        client.on("Tracing.tracingComplete") do |event, index|
           next if index.to_i != 0
           stream_to_file(event.fetch("stream"), path: path.value)
         end
