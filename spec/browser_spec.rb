@@ -918,21 +918,21 @@ module Ferrum
         file_path = "#{PROJECT_ROOT}/spec/tmp/trace.json"
         browser.tracing.start(path: file_path)
         browser.go_to
-        expect(browser.tracing).to receive(:stream_to_file).with("1", path: file_path).once.and_call_original
+        expect(browser.tracing).to receive(:stream_to_file).with(kind_of(String), path: file_path).once.and_call_original
         browser.tracing.stop
         sleep 2
         expect(File.exist?(file_path)).to be(true)
         file_path2 = "#{PROJECT_ROOT}/spec/tmp/trace2.json"
         browser.tracing.start(path: file_path2)
         browser.go_to
-        expect(browser.tracing).to receive(:stream_to_file).with("2", path: file_path2).once.and_call_original
+        expect(browser.tracing).to receive(:stream_to_file).with(kind_of(String), path: file_path2).once.and_call_original
         browser.tracing.stop
         sleep 2
         expect(File.exist?(file_path2)).to be(true)
         file_path3 = "#{PROJECT_ROOT}/spec/tmp/trace3.json"
         browser.tracing.start(path: file_path3)
         browser.go_to
-        expect(browser.tracing).to receive(:stream_to_file).with("3", path: file_path3).once.and_call_original
+        expect(browser.tracing).to receive(:stream_to_file).with(kind_of(String), path: file_path3).once.and_call_original
         browser.tracing.stop
         sleep 2
         expect(File.exist?(file_path3)).to be(true)
