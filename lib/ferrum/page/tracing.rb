@@ -30,7 +30,11 @@ module Ferrum
         options: {}
       )
         categories = INCLUDED_CATEGORIES.concat(["disabled-by-default-devtools.screenshot"]) if screenshots
-        self.path = path
+        self.file_path = path
+        client.on("Tracing.tracingComplete") do |event, index, total|
+          next if index.to_i != 0
+          stream_to_file(event.fetch("stream"), path: file_path)
+        end
         client.command(
           "Tracing.start",
           transferMode: "ReturnAsStream",
@@ -43,15 +47,12 @@ module Ferrum
       end
 
       def stop
-        client.on("Tracing.tracingComplete", handler_type: :once) do |event|
-          stream_to_file(event.fetch("stream"), path: path)
-        end
         client.command("Tracing.end")
       end
 
       private
 
-      attr_accessor :client, :path
+      attr_accessor :client, :file_path
 
       # DRY lib/ferrum/page/screenshot.rb
       def stream_to_file(handle, path:)
