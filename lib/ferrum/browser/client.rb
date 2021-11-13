@@ -50,12 +50,12 @@ module Ferrum
         response
       end
 
-      def on(event, handler_type: :any_times, &block)
+      def on(event, &block)
         case event
         when *INTERRUPTIONS
-          @interrupter.on(event, handler_type: handler_type, &block)
+          @interrupter.on(event, &block)
         else
-          @subscriber.on(event, handler_type: handler_type, &block)
+          @subscriber.on(event, &block)
         end
       end
 
