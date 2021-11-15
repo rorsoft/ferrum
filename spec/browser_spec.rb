@@ -832,7 +832,6 @@ module Ferrum
         browser.tracing.start(path: file_path)
         browser.go_to("https://www.google.com")
         browser.tracing.stop
-        sleep 2
         expect(File.exist?(file_path)).to be(true)
       ensure
         FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
@@ -847,7 +846,6 @@ module Ferrum
         })
         browser.go_to
         browser.tracing.stop
-        sleep 2
         expect(File.exist?(file_path)).to be(true)
         content = File.read(file_path)
         trace_config = JSON.parse(content)["metadata"]["trace-config"]
@@ -862,7 +860,6 @@ module Ferrum
         browser.tracing.start(path: file_path)
         browser.go_to
         browser.tracing.stop
-        sleep 2
         expect(File.exist?(file_path)).to be(true)
         content = File.read(file_path)
         trace_config = JSON.parse(content)["metadata"]["trace-config"]
@@ -890,7 +887,6 @@ module Ferrum
         browser.tracing.start(path: file_path)
         browser.go_to
         browser.tracing.stop
-        sleep 2
         expect(File.exist?(file_path)).to be(true)
         content = File.read(file_path)
         trace_config = JSON.parse(content)["metadata"]["trace-config"]
@@ -908,7 +904,7 @@ module Ferrum
         end
       end
 
-      it "throws an exception if tracing on two pages" do
+      it "throws an exception if tracing is not started yet" do
         expect { browser.tracing.stop }.to raise_exception(Ferrum::BrowserError) do |e|
           expect(e.message).to eq("Tracing is not started")
         end
@@ -920,21 +916,18 @@ module Ferrum
         browser.go_to
         expect(browser.tracing).to receive(:stream_to_file).with(kind_of(String), path: file_path).once.and_call_original
         browser.tracing.stop
-        sleep 2
         expect(File.exist?(file_path)).to be(true)
         file_path2 = "#{PROJECT_ROOT}/spec/tmp/trace2.json"
         browser.tracing.start(path: file_path2)
         browser.go_to
         expect(browser.tracing).to receive(:stream_to_file).with(kind_of(String), path: file_path2).once.and_call_original
         browser.tracing.stop
-        sleep 2
         expect(File.exist?(file_path2)).to be(true)
         file_path3 = "#{PROJECT_ROOT}/spec/tmp/trace3.json"
         browser.tracing.start(path: file_path3)
         browser.go_to
         expect(browser.tracing).to receive(:stream_to_file).with(kind_of(String), path: file_path3).once.and_call_original
         browser.tracing.stop
-        sleep 2
         expect(File.exist?(file_path3)).to be(true)
       ensure
         FileUtils.rm_f(file_path)

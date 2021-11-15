@@ -30,18 +30,20 @@ module Ferrum
         options: {}
       )
         categories = INCLUDED_CATEGORIES.concat(["disabled-by-default-devtools.screenshot"]) if screenshots
-        self.path = Concurrent::ThreadLocalVar.new(path)
+        self.path = path
+        self.promise = Concurrent::Promises.resolvable_future
+        subscribe_on_tracing_event
         inner_start(options)
       end
 
       def stop
-        handle_tracing_event
         client.command("Tracing.end")
+        promise.value!
       end
 
       private
 
-      attr_accessor :client, :path
+      attr_accessor :client, :path, :promise
 
       def inner_start(options)
         client.command(
@@ -55,10 +57,10 @@ module Ferrum
         )
       end
 
-      def handle_tracing_event
+      def subscribe_on_tracing_event
         client.on("Tracing.tracingComplete") do |event, index|
           next if index.to_i != 0
-          stream_to_file(event.fetch("stream"), path: path.value)
+          promise.fulfill(stream_to_file(event.fetch("stream"), path: path))
         end
       end
 
