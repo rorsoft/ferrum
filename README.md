@@ -53,6 +53,7 @@ Web design by [Evrone](https://evrone.com/), what else
 * [Dialogs](https://github.com/rubycdp/ferrum#dialogs)
 * [Animation](https://github.com/rubycdp/ferrum#animation)
 * [Node](https://github.com/rubycdp/ferrum#node)
+* [Tracing](https://github.com/rubycdp/ferrum#tracing)
 * [Thread safety](https://github.com/rubycdp/ferrum#thread-safety)
 * [Development](https://github.com/rubycdp/ferrum#development)
 * [Contributing](https://github.com/rubycdp/ferrum#contributing)
@@ -1100,6 +1101,33 @@ frame.at_css("//a[text() = 'Log in']") # => Node
 #### evaluate
 #### selected : `Array`
 #### select
+
+
+## Tracing
+
+You can use `tracing.start` and `tracing.stop` to create a trace file which can be opened in Chrome DevTools or [timeline viewer](https://chromedevtools.github.io/timeline-viewer/).
+
+```ruby
+browser.tracing.start(path: "trace.json")
+browser.go_to("https://www.google.com");
+browser.tracing.stop
+```
+
+#### start(trace_options:, \*\*options) : `Hash` | `Hash`
+
+* trace_options `Hash` 
+  * Specify [Tracing.start PARAMETERS](https://chromedevtools.github.io/devtools-protocol/tot/Tracing/#method-start).
+
+* options `Hash`
+  * `:path` (String) - `String` to save a Trace data output on the disk, not specified by default.
+  * `:encoding` (Symbol) - `:base64` | `:binary` setting only for memory Trace data output, `:binary` by default.
+  * `:screenshots` (Boolean) - When true - Captures screenshots in the trace, `false` by default.
+
+Only one trace can be active at a time per browser.
+
+#### tracing.stop
+  - By default: returns Trace data from `Tracing.tracingComplete` event.
+  - When `path` specified: return `true` and store Trace data from `Tracing.tracingComplete` event to file.
 
 
 ## Thread safety ##
