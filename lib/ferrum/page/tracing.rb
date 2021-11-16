@@ -32,7 +32,6 @@ module Ferrum
           encoding: :binary,
           **options
         )
-        self.options.promise = Concurrent::Promises.resolvable_future
         subscribe_on_tracing_event
         inner_start(trace_options)
       end
@@ -67,6 +66,7 @@ module Ferrum
       end
 
       def subscribe_on_tracing_event
+        options.promise = Concurrent::Promises.resolvable_future
         client.on("Tracing.tracingComplete") do |event, index|
           next if index.to_i != 0
 
