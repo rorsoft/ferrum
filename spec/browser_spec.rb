@@ -963,6 +963,15 @@ module Ferrum
           expect(JSON.parse(trace)["traceEvents"].any? { |object| object["name"] == "Screenshot" }).to eq(true)
         end
       end
+
+      it "fails with provided error on any errors in stream output" do
+        browser.tracing.start(path: file_path)
+        browser.go_to
+        execute_error = StandardError.new('error message')
+        expect(browser.tracing).to receive(:stream).with(kind_of(String)).once.and_raise(execute_error)
+        expect { browser.tracing.stop }.to raise_exception(execute_error, 'error message')
+        expect(File.exist?(file_path)).to be(false)
+      end
     end
   end
 end

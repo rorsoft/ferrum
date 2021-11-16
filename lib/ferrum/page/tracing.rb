@@ -62,6 +62,8 @@ module Ferrum
         client.on("Tracing.tracingComplete") do |event, index|
           next if index.to_i != 0
           promise.fulfill(stream(event.fetch("stream")))
+        rescue StandardError => e
+          promise.reject(e)
         end
       end
 
