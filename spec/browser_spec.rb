@@ -941,8 +941,27 @@ module Ferrum
         trace = browser.tracing.stop
         expect(File.exist?(file_path)).to be(false)
         expect(JSON.parse(trace)["traceEvents"].any?).to eq(true)
-      ensure
-        FileUtils.rm_f(file_path)
+      end
+
+      context "screenshots enabled" do
+        it "fills file with screenshot data" do
+          browser.tracing.start(path: file_path, screenshots: true)
+          browser.go_to("/ferrum/grid")
+          browser.tracing.stop
+          expect(File.exist?(file_path)).to be(true)
+          trace_events = JSON.parse(File.read(file_path))["traceEvents"]
+          expect(trace_events.any? { |object| object["name"] == "Screenshot" }).to eq(true)
+        ensure
+          FileUtils.rm_f(file_path)
+        end
+
+        it "returns a buffer with screenshot data" do
+          browser.tracing.start(screenshots: true)
+          browser.go_to("/ferrum/grid")
+          trace = browser.tracing.stop
+          expect(File.exist?(file_path)).to be(false)
+          expect(JSON.parse(trace)["traceEvents"].any? { |object| object["name"] == "Screenshot" }).to eq(true)
+        end
       end
     end
   end
