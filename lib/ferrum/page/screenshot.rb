@@ -42,7 +42,7 @@ module Ferrum
         path, encoding = common_options(**opts)
         options = pdf_options(**opts).merge(transferMode: "ReturnAsStream")
         handle = command("Page.printToPDF", **options).fetch("stream")
-        Utils::Stream.from(@client).fetch(handle, encoding: encoding, path: path)
+        Utils::Stream.for(self).fetch(handle, encoding: encoding, path: path)
       end
 
       def mhtml(path: nil)

@@ -71,7 +71,7 @@ module Ferrum
       end
 
       def stream(handle)
-        Utils::Stream.from(client).fetch(handle, encoding: encoding, path: path)
+        Utils::Stream.for(client).fetch(handle, encoding: encoding, path: path)
       end
     end
   end

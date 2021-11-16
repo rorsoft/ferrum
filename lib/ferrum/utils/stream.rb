@@ -5,8 +5,8 @@ module Ferrum
     module Stream
       module_function
 
-      def from(client)
-        tap { @client = client }
+      def for(source)
+        tap { @source = source }
       end
 
       def fetch(handle, path:, encoding:)
@@ -30,7 +30,7 @@ module Ferrum
 
       def stream_to(handle, output)
         loop do
-          result = @client.command("IO.read", handle: handle, size: 128 * 1024)
+          result = @source.command("IO.read", handle: handle, size: 128 * 1024)
           data_chunk = result["data"]
           data_chunk = Base64.decode64(data_chunk) if result["base64Encoded"]
           output << data_chunk
