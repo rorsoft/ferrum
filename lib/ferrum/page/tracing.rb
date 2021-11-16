@@ -25,7 +25,8 @@ module Ferrum
       end
 
       def start(
-        path: '',
+        path: nil,
+        encoding: :base64,
         screenshots: false,
         options: {}
       )
@@ -43,7 +44,7 @@ module Ferrum
 
       private
 
-      attr_accessor :client, :path, :promise
+      attr_accessor :client, :path, :encoding, :promise
 
       def inner_start(options)
         client.command(
@@ -60,7 +61,15 @@ module Ferrum
       def subscribe_on_tracing_event
         client.on("Tracing.tracingComplete") do |event, index|
           next if index.to_i != 0
-          promise.fulfill(stream_to_file(event.fetch("stream"), path: path))
+          promise.fulfill(stream(event.fetch("stream")))
+        end
+      end
+
+      def stream(handle)
+        if path.nil?
+          stream_to_memory(handle, encoding: encoding)
+        else
+          stream_to_file(handle, path: path)
         end
       end
 
@@ -68,6 +77,12 @@ module Ferrum
       def stream_to_file(handle, path:)
         File.open(path, "wb") { |f| stream_to(handle, f) }
         true
+      end
+
+      def stream_to_memory(handle, encoding:)
+        data = String.new("") # Mutable string has << and compatible to File
+        stream_to(handle, data)
+        encoding == :base64 ? Base64.encode64(data) : data
       end
 
       def stream_to(handle, output)

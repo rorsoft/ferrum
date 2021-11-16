@@ -934,6 +934,16 @@ module Ferrum
         FileUtils.rm_f(file_path2)
         FileUtils.rm_f(file_path3)
       end
+
+      it "returns a buffer" do
+        browser.tracing.start
+        browser.go_to
+        trace = browser.tracing.stop
+        expect(File.exist?(file_path)).to be(false)
+        expect(JSON.parse(trace)["traceEvents"].any?).to eq(true)
+      ensure
+        FileUtils.rm_f(file_path)
+      end
     end
   end
 end
