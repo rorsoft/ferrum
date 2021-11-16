@@ -15,10 +15,10 @@ module Ferrum
         disabled-by-default-devtools.timeline.stack
         disabled-by-default-v8.cpu_profiler
         disabled-by-default-v8.cpu_profiler.hires
-      ]
+      ].freeze
       EXCLUDED_CATEGORIES = %w[
         *
-      ]
+      ].freeze
 
       def initialize(client:)
         self.client = client
@@ -30,11 +30,13 @@ module Ferrum
         screenshots: false,
         options: {}
       )
-        categories = INCLUDED_CATEGORIES.concat(["disabled-by-default-devtools.screenshot"]) if screenshots
+        included_categories = INCLUDED_CATEGORIES
+        included_categories = INCLUDED_CATEGORIES | ["disabled-by-default-devtools.screenshot"] if screenshots
         self.path = path
+        self.encoding = encoding
         self.promise = Concurrent::Promises.resolvable_future
         subscribe_on_tracing_event
-        inner_start(options)
+        inner_start(options, included_categories)
       end
 
       def stop
@@ -46,13 +48,13 @@ module Ferrum
 
       attr_accessor :client, :path, :encoding, :promise
 
-      def inner_start(options)
+      def inner_start(options, included_categories)
         client.command(
           "Tracing.start",
           transferMode: "ReturnAsStream",
           traceConfig: {
-            includedCategories: INCLUDED_CATEGORIES,
-            excludedCategories: EXCLUDED_CATEGORIES,
+            includedCategories: included_categories,
+            excludedCategories: EXCLUDED_CATEGORIES
           },
           **options
         )
@@ -61,6 +63,7 @@ module Ferrum
       def subscribe_on_tracing_event
         client.on("Tracing.tracingComplete") do |event, index|
           next if index.to_i != 0
+
           promise.fulfill(stream(event.fetch("stream")))
         rescue StandardError => e
           promise.reject(e)

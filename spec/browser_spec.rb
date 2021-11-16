@@ -838,12 +838,15 @@ module Ferrum
       end
 
       it "runs with custom options" do
-        browser.tracing.start(path: file_path, options: {
-          traceConfig: {
-            includedCategories: ["disabled-by-default-devtools.timeline"],
-            excludedCategories: ["*"],
-          },
-        })
+        browser.tracing.start(
+          path: file_path,
+          options: {
+            traceConfig: {
+              includedCategories: ["disabled-by-default-devtools.timeline"],
+              excludedCategories: ["*"]
+            }
+          }
+        )
         browser.go_to
         browser.tracing.stop
         expect(File.exist?(file_path)).to be(true)
@@ -864,8 +867,8 @@ module Ferrum
         content = File.read(file_path)
         trace_config = JSON.parse(content)["metadata"]["trace-config"]
         expect(JSON.parse(trace_config)["excluded_categories"]).to eq(["*"])
-        expect(JSON.parse(trace_config)["included_categories"]).
-          to match_array(%w[
+        expect(JSON.parse(trace_config)["included_categories"])
+          .to match_array(%w[
             devtools.timeline
             v8.execute
             disabled-by-default-devtools.timeline
@@ -935,8 +938,17 @@ module Ferrum
         FileUtils.rm_f(file_path3)
       end
 
-      it "returns a buffer" do
+      it "returns encoded 64 buffer" do
         browser.tracing.start
+        browser.go_to
+        trace = browser.tracing.stop
+        expect(File.exist?(file_path)).to be(false)
+        decode64_trace = Base64.decode64(trace)
+        expect(JSON.parse(decode64_trace)["traceEvents"].any?).to eq(true)
+      end
+
+      it "returns buffer with no encoding" do
+        browser.tracing.start(encoding: nil)
         browser.go_to
         trace = browser.tracing.stop
         expect(File.exist?(file_path)).to be(false)
@@ -949,7 +961,10 @@ module Ferrum
           browser.go_to("/ferrum/grid")
           browser.tracing.stop
           expect(File.exist?(file_path)).to be(true)
-          trace_events = JSON.parse(File.read(file_path))["traceEvents"]
+          content = JSON.parse(File.read(file_path))
+          trace_events = content["traceEvents"]
+          trace_config = content["metadata"]["trace-config"]
+          expect(JSON.parse(trace_config)["included_categories"]).to include("disabled-by-default-devtools.screenshot")
           expect(trace_events.any? { |object| object["name"] == "Screenshot" }).to eq(true)
         ensure
           FileUtils.rm_f(file_path)
@@ -960,16 +975,19 @@ module Ferrum
           browser.go_to("/ferrum/grid")
           trace = browser.tracing.stop
           expect(File.exist?(file_path)).to be(false)
-          expect(JSON.parse(trace)["traceEvents"].any? { |object| object["name"] == "Screenshot" }).to eq(true)
+          decode64_trace = Base64.decode64(trace)
+          trace_config = JSON.parse(decode64_trace)["metadata"]["trace-config"]
+          expect(JSON.parse(trace_config)["included_categories"]).to include("disabled-by-default-devtools.screenshot")
+          expect(JSON.parse(decode64_trace)["traceEvents"].any? { |object| object["name"] == "Screenshot" }).to eq(true)
         end
       end
 
       it "fails with provided error on any errors in stream output" do
         browser.tracing.start(path: file_path)
         browser.go_to
-        execute_error = StandardError.new('error message')
+        execute_error = StandardError.new("error message")
         expect(browser.tracing).to receive(:stream).with(kind_of(String)).once.and_raise(execute_error)
-        expect { browser.tracing.stop }.to raise_exception(execute_error, 'error message')
+        expect { browser.tracing.stop }.to raise_exception(execute_error, "error message")
         expect(File.exist?(file_path)).to be(false)
       end
     end
