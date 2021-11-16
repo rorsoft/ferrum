@@ -834,7 +834,7 @@ module Ferrum
         browser.tracing.stop
         expect(File.exist?(file_path)).to be(true)
       ensure
-        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
+        FileUtils.rm_f(file_path)
       end
 
       it "runs with custom options" do
@@ -856,7 +856,7 @@ module Ferrum
         expect(JSON.parse(trace_config)["included_categories"]).to eq(["disabled-by-default-devtools.timeline"])
         expect(JSON.parse(content)["traceEvents"].any? { |object| object["cat"] == "toplevel" }).to eq(false)
       ensure
-        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
+        FileUtils.rm_f(file_path)
       end
 
       it "runs with default categories" do
@@ -883,7 +883,7 @@ module Ferrum
           ])
         expect(JSON.parse(content)["traceEvents"].any? { |object| object["cat"] == "toplevel" }).to eq(true)
       ensure
-        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
+        FileUtils.rm_f(file_path)
       end
 
       it "runs with default categories" do
@@ -896,7 +896,7 @@ module Ferrum
         expect(JSON.parse(trace_config)["excluded_categories"]).to eq(["*"])
         expect(JSON.parse(content)["traceEvents"].any? { |object| object["cat"] == "toplevel" }).to eq(true)
       ensure
-        FileUtils.rm_f("#{PROJECT_ROOT}/spec/tmp/trace.json")
+        FileUtils.rm_f(file_path)
       end
 
       it "throws an exception if tracing on two pages" do
