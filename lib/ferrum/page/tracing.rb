@@ -24,31 +24,23 @@ module Ferrum
         self.client = client
       end
 
-      def start(
-        path: nil,
-        encoding: :base64,
-        screenshots: false,
-        options: {}
-      )
-        included_categories = INCLUDED_CATEGORIES
-        included_categories = INCLUDED_CATEGORIES | ["disabled-by-default-devtools.screenshot"] if screenshots
-        self.path = path
-        self.encoding = encoding
-        self.promise = Concurrent::Promises.resolvable_future
+      def start(trace_options: {}, **options)
+        self.options = OpenStruct.new(**options)
+        self.options.promise = Concurrent::Promises.resolvable_future
         subscribe_on_tracing_event
-        inner_start(options, included_categories)
+        inner_start(trace_options)
       end
 
       def stop
         client.command("Tracing.end")
-        promise.value!
+        options.promise.value!
       end
 
       private
 
-      attr_accessor :client, :path, :encoding, :promise
+      attr_accessor :client, :options
 
-      def inner_start(options, included_categories)
+      def inner_start(trace_options)
         client.command(
           "Tracing.start",
           transferMode: "ReturnAsStream",
@@ -56,22 +48,28 @@ module Ferrum
             includedCategories: included_categories,
             excludedCategories: EXCLUDED_CATEGORIES
           },
-          **options
+          **trace_options
         )
+      end
+
+      def included_categories
+        included_categories = INCLUDED_CATEGORIES
+        included_categories = INCLUDED_CATEGORIES | ["disabled-by-default-devtools.screenshot"] if options.screenshots
+        included_categories
       end
 
       def subscribe_on_tracing_event
         client.on("Tracing.tracingComplete") do |event, index|
           next if index.to_i != 0
 
-          promise.fulfill(stream(event.fetch("stream")))
+          options.promise.fulfill(stream(event.fetch("stream")))
         rescue StandardError => e
-          promise.reject(e)
+          options.promise.reject(e)
         end
       end
 
       def stream(handle)
-        Utils::Stream.for(client).fetch(handle, encoding: encoding, path: path)
+        Utils::Stream.for(client).fetch(handle, encoding: options.encoding, path: options.path)
       end
     end
   end

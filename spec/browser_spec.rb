@@ -840,7 +840,7 @@ module Ferrum
       it "runs with custom options" do
         browser.tracing.start(
           path: file_path,
-          options: {
+          trace_options: {
             traceConfig: {
               includedCategories: ["disabled-by-default-devtools.timeline"],
               excludedCategories: ["*"]
@@ -939,7 +939,7 @@ module Ferrum
       end
 
       it "returns encoded 64 buffer" do
-        browser.tracing.start
+        browser.tracing.start(encoding: :base64)
         browser.go_to
         trace = browser.tracing.stop
         expect(File.exist?(file_path)).to be(false)
@@ -948,7 +948,7 @@ module Ferrum
       end
 
       it "returns buffer with no encoding" do
-        browser.tracing.start(encoding: nil)
+        browser.tracing.start
         browser.go_to
         trace = browser.tracing.stop
         expect(File.exist?(file_path)).to be(false)
@@ -975,10 +975,9 @@ module Ferrum
           browser.go_to("/ferrum/grid")
           trace = browser.tracing.stop
           expect(File.exist?(file_path)).to be(false)
-          decode64_trace = Base64.decode64(trace)
-          trace_config = JSON.parse(decode64_trace)["metadata"]["trace-config"]
+          trace_config = JSON.parse(trace)["metadata"]["trace-config"]
           expect(JSON.parse(trace_config)["included_categories"]).to include("disabled-by-default-devtools.screenshot")
-          expect(JSON.parse(decode64_trace)["traceEvents"].any? { |object| object["name"] == "Screenshot" }).to eq(true)
+          expect(JSON.parse(trace)["traceEvents"].any? { |object| object["name"] == "Screenshot" }).to eq(true)
         end
       end
 
