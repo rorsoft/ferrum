@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "ostruct"
+
 module Ferrum
   class Page
     class Tracing
@@ -25,7 +27,11 @@ module Ferrum
       end
 
       def start(trace_options: {}, **options)
-        self.options = OpenStruct.new(**options)
+        self.options = OpenStruct.new(
+          screenshots: false,
+          encoding: :binary,
+          **options
+        )
         self.options.promise = Concurrent::Promises.resolvable_future
         subscribe_on_tracing_event
         inner_start(trace_options)
@@ -54,7 +60,9 @@ module Ferrum
 
       def included_categories
         included_categories = INCLUDED_CATEGORIES
-        included_categories = INCLUDED_CATEGORIES | ["disabled-by-default-devtools.screenshot"] if options.screenshots
+        if options.screenshots == true
+          included_categories = INCLUDED_CATEGORIES | ["disabled-by-default-devtools.screenshot"]
+        end
         included_categories
       end
 
