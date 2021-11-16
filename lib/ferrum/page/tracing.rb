@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "ostruct"
-
 module Ferrum
   class Page
     class Tracing
@@ -27,23 +25,24 @@ module Ferrum
       end
 
       def start(trace_options: {}, **options)
-        self.options = OpenStruct.new(
+        self.options = {
           screenshots: false,
           encoding: :binary,
           **options
-        )
+        }
+        self.promise = Concurrent::Promises.resolvable_future
         subscribe_on_tracing_event
         inner_start(trace_options)
       end
 
       def stop
         client.command("Tracing.end")
-        options.promise.value!
+        promise.value!
       end
 
       private
 
-      attr_accessor :client, :options
+      attr_accessor :client, :options, :promise
 
       def inner_start(trace_options)
         client.command(
@@ -59,25 +58,24 @@ module Ferrum
 
       def included_categories
         included_categories = INCLUDED_CATEGORIES
-        if options.screenshots == true
+        if options[:screenshots] == true
           included_categories = INCLUDED_CATEGORIES | ["disabled-by-default-devtools.screenshot"]
         end
         included_categories
       end
 
       def subscribe_on_tracing_event
-        options.promise = Concurrent::Promises.resolvable_future
         client.on("Tracing.tracingComplete") do |event, index|
           next if index.to_i != 0
 
-          options.promise.fulfill(stream(event.fetch("stream")))
+          promise.fulfill(stream(event.fetch("stream")))
         rescue StandardError => e
-          options.promise.reject(e)
+          promise.reject(e)
         end
       end
 
       def stream(handle)
-        Utils::Stream.for(client).fetch(handle, encoding: options.encoding, path: options.path)
+        Utils::Stream.for(client).fetch(handle, encoding: options[:encoding], path: options[:path])
       end
     end
   end
