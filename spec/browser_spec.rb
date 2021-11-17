@@ -840,7 +840,7 @@ module Ferrum
       it "runs with custom options" do
         browser.tracing.start(
           path: file_path,
-          trace_options: {
+          trace_params: {
             traceConfig: {
               includedCategories: ["disabled-by-default-devtools.timeline"],
               excludedCategories: ["*"]

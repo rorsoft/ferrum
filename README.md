@@ -1113,9 +1113,9 @@ browser.go_to("https://www.google.com");
 browser.tracing.stop
 ```
 
-#### tracing.start(trace_options:, \*\*options) : `Hash` | `Hash`
+#### tracing.start(trace_params:, \*\*options) : `Hash` | `Hash`
 
-* trace_options `Hash` 
+* trace_params `Hash` 
   * Specify [Tracing.start PARAMETERS](https://chromedevtools.github.io/devtools-protocol/tot/Tracing/#method-start).
 
 * options `Hash`
