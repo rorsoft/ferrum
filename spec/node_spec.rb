@@ -1,4 +1,7 @@
-# frozen_string_literal: true
+require 'hashdiff'
+require 'terminal-table'
+
+class SnapshotMismatchError < StandardError; end
 
 module Ferrum
   describe Node do
@@ -270,6 +273,44 @@ module Ferrum
 
         expect(styles["color"]).to eq("rgb(255, 0, 0)")
         expect(styles["font-weight"]).to eq("700")
+      end
+    end
+
+    describe "#assert_styles_unchanged" do
+      before do
+        browser.go_to("/ferrum/computed_style")
+      end
+
+      it "raises an error if the styles do not match the snapshot" do
+        expect { assert_styles_unchanged("#test_node") }.to raise_error(SnapshotMismatchError)
+      end
+    end
+
+    def assert_styles_unchanged(selector)
+      current_dir = File.dirname(__FILE__)
+      snapshot_dir = File.join(current_dir, "style_snapshots")
+      Dir.mkdir(snapshot_dir) unless File.exist?(snapshot_dir)
+
+      fixture = File.join(snapshot_dir, "#{selector.gsub('#', '')}.json")
+
+      computed_style = browser.at_css(selector).computed_style
+
+      if File.exist?(fixture)
+        snapshot = JSON.parse(File.read(fixture))
+        changes = Hashdiff.diff(snapshot, computed_style)
+        if changes.any?
+          message = "The following properties changed in value:\n\n"
+          table = Terminal::Table.new(headings: ['Property', 'Old', 'New']) do |t|
+            changes.each do |_, property, old_value, new_value|
+              t << [property, old_value, new_value]
+            end
+          end
+
+          raise(SnapshotMismatchError, message + table.to_s)
+        end
+      else
+        json = JSON.pretty_generate(computed_style)
+        File.open(fixture, "w") { |f| f.write(json) }
       end
     end
   end
